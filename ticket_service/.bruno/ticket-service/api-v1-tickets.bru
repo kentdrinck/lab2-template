@@ -1,0 +1,15 @@
+meta {
+  name: /api/v1/tickets
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/v1/tickets
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-User-Name: user_alex
+}

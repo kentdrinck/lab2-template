@@ -34,3 +34,11 @@ type FlightResponse struct {
 	Date         string `json:"date"` // Будет форматирована как "2021-10-08 20:00"
 	Price        int    `json:"price"`
 }
+
+// FlightNumbersRequest - DTO для тела POST-запроса
+type FlightNumbersRequest struct {
+	FlightNumbers []string `json:"flightNumbers" binding:"required,min=1"`
+}
+
+// FlightResponse и PaginationResponse используются из вашего примера.
+// В данном контексте нам нужна только FlightResponse.

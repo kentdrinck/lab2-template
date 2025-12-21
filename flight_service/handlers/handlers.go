@@ -6,16 +6,17 @@ import (
 
 	"flight_service/database"
 	"flight_service/models"
+	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
 
 // PaginationResponse - структура для ответа с пагинацией
 type PaginationResponse struct {
-	Page          int                     `json:"page"`
-	PageSize      int                     `json:"pageSize"`
-	TotalElements int64                   `json:"totalElements"`
-	Items         []models.FlightResponse `json:"items"`
+	Page          int                     `json:"current_page"`
+	PageSize      int                     `json:"page_size"`
+	TotalElements int64                   `json:"total_elements"`
+	Items         []models.FlightResponse `json:"results"`
 }
 
 // GetFlights обрабатывает GET запрос для получения списка перелетов с пагинацией
@@ -83,4 +84,55 @@ func GetFlights(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// GetFlightsByNumbers обрабатывает POST запрос, принимая список номеров рейсов
+// и возвращая соответствующие данные FlightResponse.
+func GetFlightsByNumbers(c *gin.Context) {
+	// 1. Получение списка номеров рейсов из Query-параметра
+	flightNumbers := c.QueryArray("flightNumber")
+
+	// 2. Получение данных из базы данных
+	var flights []models.Flight
+
+	// Используем WHERE IN для выбора рейсов по списку номеров.
+	// Вызов DB.Where() с массивом строк автоматически создаст SQL "IN (?)".
+	err := database.DB.
+		Where("flight_number IN (?)", flightNumbers).
+		Preload("FromAirport").
+		Preload("ToAirport").
+		Find(&flights).Error
+
+	// Обработка ошибки базы данных
+	if err != nil && err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения перелетов по номерам"})
+		return
+	}
+
+	// 3. Преобразование в формат ответа API
+	flightResponses := make([]models.FlightResponse, len(flights))
+	for i, flight := range flights {
+		// Проверка на nil, если связь не была найдена (хотя Preload должен сработать)
+		fromAirportName := ""
+		fromAirportCity := ""
+		fromAirportName = flight.FromAirport.Name
+		fromAirportCity = flight.FromAirport.City
+
+		toAirportName := ""
+		toAirportCity := ""
+		toAirportName = flight.ToAirport.Name
+		toAirportCity = flight.ToAirport.City
+
+		flightResponses[i] = models.FlightResponse{
+			FlightNumber: flight.FlightNumber,
+			// Объединяем Название и Город, как в вашем примере
+			FromAirport: fromAirportName + " " + fromAirportCity,
+			ToAirport:   toAirportName + " " + toAirportCity,
+			// Форматируем время
+			Date:  flight.Datetime.Format("2006-01-02 15:04"),
+			Price: flight.Price,
+		}
+	}
+
+	c.JSON(http.StatusOK, flightResponses)
 }

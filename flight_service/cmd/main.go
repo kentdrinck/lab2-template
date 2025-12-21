@@ -29,12 +29,8 @@ func main() {
 	// Инициализация роутера Gin
 	router := gin.Default()
 
-	// Группа роутов API версии 1
-	v1 := router.Group("/api/v1")
-	{
-		// GET {{baseUrl}}/api/v1/flights?page={{page}}&size={{size}}
-		v1.GET("/flights", handlers.GetFlights)
-	}
+	router.GET("/flights", handlers.GetFlights)
+	router.GET("/flights-by-number/", handlers.GetFlightsByNumbers)
 
 	// Запуск сервера. Порт берется из переменной окружения или по умолчанию 8080
 	port := os.Getenv("PORT")
