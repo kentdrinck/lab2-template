@@ -23,6 +23,10 @@ flight_client = FlightClient(os.getenv("FLIGHT_SERVICE_HOST"))
 ticket_client = TicketClient(os.getenv("TICKET_SERVICE_HOST"))
 bonus_client = BonusClient(os.getenv("BONUS_SERVICE_HOST"))
 
+@app.get("/manage/health")
+async def manage_health():
+    return {}
+
 @app.get("/api/v1/flights")
 async def get_flights(page: int = 0, size: int = 10):
     resp = await flight_client.get_flights(page, size)

@@ -4,6 +4,10 @@ from .schemas import PaginationResponse, FlightResponse
 
 app = FastAPI(title="Flight Service")
 
+@app.get("/manage/health")
+async def manage_health():
+    return {}
+
 @app.get("/api/v1/flights", response_model=PaginationResponse)
 async def get_flights(page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=100)):
     items, total = fetch_flights(page, size)

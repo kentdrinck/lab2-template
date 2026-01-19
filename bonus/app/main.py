@@ -4,6 +4,10 @@ from .schemas import PrivilegeInfoResponse, BonusOperationRequest, BonusOperatio
 
 app = FastAPI(title="Bonus Service")
 
+@app.get("/manage/health")
+async def manage_health():
+    return {}
+
 @app.get("/api/v1/privilege", response_model=PrivilegeInfoResponse)
 async def get_privilege(x_user_name: str = Header(...)):
     data = get_privilege_with_history(x_user_name)

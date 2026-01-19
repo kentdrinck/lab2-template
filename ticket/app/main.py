@@ -5,6 +5,10 @@ from typing import List
 
 app = FastAPI(title="Ticket Service")
 
+@app.get("/manage/health")
+async def manage_health():
+    return {}
+
 @app.get("/api/v1/tickets", response_model=List[TicketInternal])
 async def get_tickets(x_user_name: str = Header(...)):
     return get_user_tickets(x_user_name)
