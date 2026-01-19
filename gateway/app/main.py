@@ -85,12 +85,15 @@ async def buy_ticket(request: dict, x_user_name: str = Header(...)):
     b_resp = await bonus_client.calculate(x_user_name, bonus_payload)
     b_data = b_resp.json()
 
-    # 3. Создание билета
+    f_resp = await flight_client.get_flight(request["flightNumber"])
+    f_data = f_resp.json()
+
     t_payload = {"flightNumber": request['flightNumber'], "price": request['price']}
     t_resp = await ticket_client.create_ticket(x_user_name, t_payload)
     t_data = t_resp.json()
 
     return {
+        **f_data,
         **t_data,
         "paidByMoney": request['price'] - b_data['paidByBonuses'],
         "paidByBonuses": b_data['paidByBonuses'],
@@ -145,3 +148,13 @@ async def get_ticket_info(ticketUid: str, x_user_name: str = Header(...)):
         "price": ticket["price"]
     }
 
+@app.get("/api/v1/privilege")
+async def get_privilege_with_history(x_user_name: str = Header(...)):
+    resp = await bonus_client.get_privilege(x_user_name)
+    
+    if resp.status_code != 200:
+        if resp.status_code == 404:
+             raise HTTPException(status_code=404, detail="Бонусный профиль не найден")
+        raise HTTPException(status_code=resp.status_code, detail="Bonus Service unavailable")
+
+    return resp.json()

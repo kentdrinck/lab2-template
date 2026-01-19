@@ -1,14 +1,18 @@
 import os, psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def get_db_connection():
     return psycopg2.connect(
-        host=os.getenv("DB_HOST", "db_bonus"),
-        database=os.getenv("DB_NAME", "bonus"),
-        user=os.getenv("DB_USER", "program"),
-        password=os.getenv("DB_PASSWORD", "test"),
-        port=os.getenv("DB_PORT", "5432")
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        port=os.getenv("DB_PORT"),
     )
 
 def get_privilege_with_history(username: str):
@@ -22,7 +26,7 @@ def get_privilege_with_history(username: str):
     if not privilege:
         cur.close()
         conn.close()
-        return None
+        return {"balance": 0, "status": "BRONZE", "history": []}
 
     # Получаем историю
     cur.execute("""
