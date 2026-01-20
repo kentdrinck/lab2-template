@@ -17,17 +17,18 @@ jobs:
 
       - uses: docker/setup-buildx-action@v2
 
-      # TODO build and run unit tests
-
       - name: Build images
         timeout-minutes: 10
         run: docker compose build --build-arg BUILDKIT_INLINE_CACHE=1
 
-      - name: Run containers
-        timeout-minutes: 5
+      - name: Run unit tests
+        timeout-minutes: 1
+        run: docker compose run test_ticket_service test_flight_service test_bonus_service
+
+      - name: Run containters
+        timeout-minutes: 3
         run: |
-          docker compose up -d
-          echo Start wait for start
+          docker compose up -d ticket_service flight_service bonus_service gateway
           ./scripts/wait-script.sh
         env:
           WAIT_PORTS: 8080,8070,8060,8050
