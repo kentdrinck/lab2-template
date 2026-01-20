@@ -1,0 +1,19 @@
+meta {
+  name: /api/v1/tickets/{uuid}
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/v1/tickets/:uuid
+  body: none
+  auth: inherit
+}
+
+params:path {
+  uuid: a1b2c3d4-e5f6-4a7b-8c9d-1e0f2a3b4c5d
+}
+
+headers {
+  X-User-Name: user_alex
+}
