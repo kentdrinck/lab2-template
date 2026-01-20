@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import uuid
 
 from .clients import FlightClient, TicketClient, BonusClient
 
@@ -76,9 +77,8 @@ async def buy_ticket(request: dict, x_user_name: str = Header(...)):
     if f_resp.status_code != 200:
         raise HTTPException(status_code=400, detail="Flight not found")
 
-    # 2. Бонусная операция
     bonus_payload = {
-        "ticketUid": "00000000-0000-0000-0000-000000000000", # Временный ID для расчета
+        "ticketUid": str(uuid.uuid4()),
         "price": request['price'],
         "paidFromBalance": request['paidFromBalance']
     }
@@ -88,7 +88,7 @@ async def buy_ticket(request: dict, x_user_name: str = Header(...)):
     f_resp = await flight_client.get_flight(request["flightNumber"])
     f_data = f_resp.json()
 
-    t_payload = {"flightNumber": request['flightNumber'], "price": request['price']}
+    t_payload = {"flightNumber": request['flightNumber'], "price": request['price'], "uuid": bonus_payload["ticketUid"]}
     t_resp = await ticket_client.create_ticket(x_user_name, t_payload)
     t_data = t_resp.json()
 
@@ -114,7 +114,6 @@ async def refund_ticket(ticketUid: str, x_user_name: str = Header(...)):
 
 @app.get("/api/v1/tickets/{ticketUid}")
 async def get_ticket_info(ticketUid: str, x_user_name: str = Header(...)):
-    # 1. Запрашиваем данные о билете в Ticket Service
     t_resp = await ticket_client.get_ticket_by_uid(x_user_name, ticketUid)
     
     if t_resp.status_code == 404:

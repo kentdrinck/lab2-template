@@ -3,12 +3,10 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
-# --- Общие модели ---
 class PrivilegeShortInfo(BaseModel):
     balance: int
-    status: str # BRONZE, SILVER, GOLD
+    status: str 
 
-# --- Flight DTO ---
 class FlightResponse(BaseModel):
     flightNumber: str
     fromAirport: str
@@ -22,7 +20,6 @@ class PaginationResponse(BaseModel):
     totalElements: int
     items: List[FlightResponse]
 
-# --- Ticket DTO ---
 class TicketResponse(BaseModel):
     ticketUid: UUID
     flightNumber: str
@@ -32,12 +29,10 @@ class TicketResponse(BaseModel):
     price: int
     status: str
 
-# --- User Info DTO ---
 class UserInfoResponse(BaseModel):
     tickets: List[TicketResponse]
     privilege: PrivilegeShortInfo
 
-# --- Purchase DTO ---
 class TicketPurchaseRequest(BaseModel):
     flightNumber: str
     price: int

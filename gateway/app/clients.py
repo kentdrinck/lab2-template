@@ -43,21 +43,19 @@ class FlightClient(BaseClient):
 
 class TicketClient(BaseClient):
     async def get_tickets(self, username: str):
-        return await self._request("GET", "/api/v1/tickets", headers={"X-User-Name": username})
+        return await self._request("GET", "/tickets", headers={"X-User-Name": username})
 
     async def create_ticket(self, username: str, payload: dict):
-        return await self._request("POST", "/api/v1/tickets", 
+        return await self._request("POST", "/tickets", 
                                   json=payload, 
                                   headers={"X-User-Name": username})
 
     async def delete_ticket(self, username: str, ticket_uid: str):
-        return await self._request("DELETE", f"/api/v1/tickets/{ticket_uid}", 
+        return await self._request("DELETE", f"/tickets/{ticket_uid}", 
                                   headers={"X-User-Name": username})
                                   
     async def get_ticket_by_uid(self, username: str, ticket_uid: str):
-        return await self._request(
-            "GET", 
-            f"/api/v1/tickets/{ticket_uid}", 
+        return await self._request("GET",  f"/tickets/{ticket_uid}", 
             headers={"X-User-Name": username}
         )
 

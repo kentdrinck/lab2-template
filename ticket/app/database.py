@@ -26,16 +26,17 @@ def get_user_tickets(username: str):
     conn.close()
     return tickets
 
-def create_new_ticket(username: str, flight_number: str, price: int):
+def create_new_ticket(username: str, flight_number: str, price: int, ticket_uid: uuid.UUID | None):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    ticket_uid = str(uuid.uuid4())
+    if not ticket_uid:
+        ticket_uid = uuid.uuid4()
     
     cur.execute("""
         INSERT INTO ticket (ticket_uid, username, flight_number, price, status)
         VALUES (%s, %s, %s, %s, 'PAID')
         RETURNING ticket_uid as "ticketUid", flight_number as "flightNumber", price, status
-    """, (ticket_uid, username, flight_number, price))
+    """, (str(ticket_uid), username, flight_number, price))
     
     ticket = cur.fetchone()
     conn.commit()

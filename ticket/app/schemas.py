@@ -11,6 +11,7 @@ class TicketInternal(BaseModel):
 class CreateTicketRequest(BaseModel):
     flightNumber: str
     price: int
+    uuid: UUID | None = None
 
 class UpdateTicketStatus(BaseModel):
     status: str # PAID, CANCELED
