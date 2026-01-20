@@ -21,7 +21,7 @@ jobs:
 
       - name: Build images
         timeout-minutes: 10
-        run: docker compose build
+        run: docker compose build --build-arg BUILDKIT_INLINE_CACHE=1
 
       - name: Run containers
         timeout-minutes: 5
@@ -54,7 +54,7 @@ jobs:
       #     column_offset: 'F'
       #     mark: "'+"
 
-      - name: Stop containers
-        if: always()
-        continue-on-error: true
-        run: docker compose down -v
+      # - name: Stop containers
+      #   if: always()
+      #   continue-on-error: true
+      #   run: docker compose down -v docker image prune -f
