@@ -27,8 +27,8 @@ class BonusOperationResponse(BaseModel):
 
 
 class RollbackRequest(BaseModel):
-    ticketUid: UUID
     price: int
+    username: str
 
 class RollbackResponse(BaseModel):
     ticketUid: UUID

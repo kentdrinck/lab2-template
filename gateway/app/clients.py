@@ -83,7 +83,7 @@ class TicketClient(BaseClient):
 class BonusClient(BaseClient):
     async def get_privilege(self, username: str):
         return await self._request(
-            "GET", "/privilege", headers={"X-User-Name": username}
+            "GET", "/privilege", params={"username": username},
         )
 
     async def   calculate(
@@ -101,7 +101,6 @@ class BonusClient(BaseClient):
         )
 
     async def rollback(self, username: str, ticket_uid: str):
-        raise NotImplemented
         return await self._request(
             "DELETE",
             f"/privilege/rollback/{ticket_uid}",

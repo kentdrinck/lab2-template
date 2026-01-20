@@ -10,7 +10,6 @@ load_dotenv()
 
 app = FastAPI(title="Gateway Service")
 
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,7 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Инициализация клиентов
 flight_client = FlightClient(os.getenv("FLIGHT_SERVICE_HOST"))
 ticket_client = TicketClient(os.getenv("TICKET_SERVICE_HOST"))
 bonus_client = BonusClient(os.getenv("BONUS_SERVICE_HOST"))
@@ -38,7 +36,6 @@ async def get_flights(page: int = 0, size: int = 10):
 
 @app.get("/api/v1/tickets")
 async def get_user_tickets(x_user_name: str = Header(...)):
-    # 1. Получаем список билетов
     t_resp = await ticket_client.get_tickets(x_user_name)
     if t_resp.status_code != 200:
         return []
@@ -46,11 +43,9 @@ async def get_user_tickets(x_user_name: str = Header(...)):
     tickets = t_resp.json()
     result = []
 
-    # 2. Обогащаем данными о рейсах
     for t in tickets:
         f_resp = await flight_client.get_flight(t["flightNumber"])
         f_data = f_resp.json() if f_resp.status_code == 200 else {}
-
         result.append(
             {
                 "ticketUid": t["ticketUid"],
@@ -67,7 +62,6 @@ async def get_user_tickets(x_user_name: str = Header(...)):
 
 @app.get("/api/v1/me")
 async def get_user_info(x_user_name: str = Header(...)):
-    # Параллельно или последовательно собираем данные через клиентов
     tickets = await get_user_tickets(x_user_name)
     p_resp = await bonus_client.get_privilege(x_user_name)
 
@@ -161,11 +155,7 @@ async def get_ticket_info(ticketUid: str, x_user_name: str = Header(...)):
 async def get_privilege_with_history(x_user_name: str = Header(...)):
     resp = await bonus_client.get_privilege(x_user_name)
 
-    if resp.status_code != 200:
-        if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail="Бонусный профиль не найден")
-        raise HTTPException(
-            status_code=resp.status_code, detail="Bonus Service unavailable"
-        )
+    if resp.status_code == 404:
+        raise HTTPException(status_code=404, detail="Бонусный профиль не найден")
 
     return resp.json()
