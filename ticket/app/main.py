@@ -14,8 +14,8 @@ async def get_tickets(x_user_name: str = Header(...)):
     return get_user_tickets(x_user_name)
 
 @app.post("/tickets", response_model=TicketInternal)
-async def create_ticket(request: CreateTicketRequest, x_user_name: str = Header(...)):
-    return create_new_ticket(x_user_name, request.flightNumber, request.price, request.uuid)
+async def create_ticket(request: CreateTicketRequest):
+    return create_new_ticket(request.username, request.flightNumber, request.price, request.uuid)
 
 @app.patch("/tickets/{ticket_uid}")
 async def patch_ticket(ticket_uid: str, request: UpdateTicketStatus, x_user_name: str = Header(...)):
@@ -25,16 +25,15 @@ async def patch_ticket(ticket_uid: str, request: UpdateTicketStatus, x_user_name
     return Response(status_code=204)
 
 @app.delete("/tickets/{ticket_uid}")
-async def delete_ticket(ticket_uid: str, x_user_name: str = Header(...)):
-    # В ТЗ возврат билета — это перевод в статус CANCELED
+async def delete_ticket(ticket_uid: str):
     updated = update_ticket_status(ticket_uid, x_user_name, 'CANCELED')
     if not updated:
         raise HTTPException(status_code=404, detail="Ticket not found")
     return Response(status_code=204)
 
 @app.get("/tickets/{ticket_uid}", response_model=TicketInternal)
-async def get_single_ticket(ticket_uid: str, x_user_name: str = Header(...)):
-    ticket = get_ticket_by_uid_and_user(ticket_uid, x_user_name)
+async def get_single_ticket(ticket_uid: str, username: str):
+    ticket = get_ticket_by_uid_and_user(ticket_uid, username)
     
     if not ticket:
         raise HTTPException(

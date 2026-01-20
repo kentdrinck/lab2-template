@@ -24,14 +24,17 @@ flight_client = FlightClient(os.getenv("FLIGHT_SERVICE_HOST"))
 ticket_client = TicketClient(os.getenv("TICKET_SERVICE_HOST"))
 bonus_client = BonusClient(os.getenv("BONUS_SERVICE_HOST"))
 
+
 @app.get("/manage/health")
 async def manage_health():
     return {}
+
 
 @app.get("/api/v1/flights")
 async def get_flights(page: int = 0, size: int = 10):
     resp = await flight_client.get_flights(page, size)
     return resp.json()
+
 
 @app.get("/api/v1/tickets")
 async def get_user_tickets(x_user_name: str = Header(...)):
@@ -39,7 +42,7 @@ async def get_user_tickets(x_user_name: str = Header(...)):
     t_resp = await ticket_client.get_tickets(x_user_name)
     if t_resp.status_code != 200:
         return []
-    
+
     tickets = t_resp.json()
     result = []
 
@@ -47,96 +50,102 @@ async def get_user_tickets(x_user_name: str = Header(...)):
     for t in tickets:
         f_resp = await flight_client.get_flight(t["flightNumber"])
         f_data = f_resp.json() if f_resp.status_code == 200 else {}
-        
-        result.append({
-            "ticketUid": t["ticketUid"],
-            "flightNumber": t["flightNumber"],
-            "fromAirport": f_data.get("fromAirport", "Unknown"),
-            "toAirport": f_data.get("toAirport", "Unknown"),
-            "date": f_data.get("date", "Unknown"),
-            "status": t["status"],
-            "price": t["price"]
-        })
+
+        result.append(
+            {
+                "ticketUid": t["ticketUid"],
+                "flightNumber": t["flightNumber"],
+                "fromAirport": f_data.get("fromAirport", "Unknown"),
+                "toAirport": f_data.get("toAirport", "Unknown"),
+                "date": f_data.get("date", "Unknown"),
+                "status": t["status"],
+                "price": t["price"],
+            }
+        )
     return result
+
 
 @app.get("/api/v1/me")
 async def get_user_info(x_user_name: str = Header(...)):
     # Параллельно или последовательно собираем данные через клиентов
     tickets = await get_user_tickets(x_user_name)
     p_resp = await bonus_client.get_privilege(x_user_name)
-    
+
     return {
         "tickets": tickets,
-        "privilege": p_resp.json() if p_resp.status_code == 200 else {"balance": 0, "status": "BRONZE"}
+        "privilege": (
+            p_resp.json()
+            if p_resp.status_code == 200
+            else {"balance": 0, "status": "BRONZE"}
+        ),
     }
+
 
 @app.post("/api/v1/tickets")
 async def buy_ticket(request: dict, x_user_name: str = Header(...)):
-    # 1. Проверка существования рейса
-    f_resp = await flight_client.get_flight(request['flightNumber'])
+    f_resp = await flight_client.get_flight(request["flightNumber"])
     if f_resp.status_code != 200:
         raise HTTPException(status_code=400, detail="Flight not found")
 
-    bonus_payload = {
-        "ticketUid": str(uuid.uuid4()),
-        "price": request['price'],
-        "paidFromBalance": request['paidFromBalance']
-    }
-    b_resp = await bonus_client.calculate(x_user_name, bonus_payload)
-    b_data = b_resp.json()
+    ticket_uuid = str(uuid.uuid4())
+    price = request["price"]
+    paid_from_balance = request["paidFromBalance"]
+    flight_number = request["flightNumber"]
 
-    f_resp = await flight_client.get_flight(request["flightNumber"])
-    f_data = f_resp.json()
+    b_data = (
+        await bonus_client.calculate(x_user_name, ticket_uuid, price, paid_from_balance)
+    ).json()
+    f_data = (await flight_client.get_flight(flight_number)).json()
 
-    t_payload = {"flightNumber": request['flightNumber'], "price": request['price'], "uuid": bonus_payload["ticketUid"]}
-    t_resp = await ticket_client.create_ticket(x_user_name, t_payload)
+    t_resp = await ticket_client.create_ticket(
+        x_user_name,
+        ticket_uuid,
+        price,
+        flight_number,
+    )
     t_data = t_resp.json()
 
     return {
         **f_data,
         **t_data,
-        "paidByMoney": request['price'] - b_data['paidByBonuses'],
-        "paidByBonuses": b_data['paidByBonuses'],
-        "privilege": b_data['privilege']
+        "paidByMoney": request["price"] - b_data["paidByBonuses"],
+        "paidByBonuses": b_data["paidByBonuses"],
+        "privilege": b_data["privilege"],
     }
+
 
 @app.delete("/api/v1/tickets/{ticketUid}", status_code=204)
 async def refund_ticket(ticketUid: str, x_user_name: str = Header(...)):
-    # 1. Отмена в сервисе билетов
     t_resp = await ticket_client.delete_ticket(x_user_name, ticketUid)
     if t_resp.status_code == 404:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    
-    # 2. Откат бонусов
+
     await bonus_client.rollback(x_user_name, ticketUid)
-    return None
 
 
 @app.get("/api/v1/tickets/{ticketUid}")
 async def get_ticket_info(ticketUid: str, x_user_name: str = Header(...)):
     t_resp = await ticket_client.get_ticket_by_uid(x_user_name, ticketUid)
-    
-    if t_resp.status_code == 404:
-        raise HTTPException(status_code=404, detail="Билет не найден или не принадлежит пользователю")
-    
-    ticket = t_resp.json()
-    print("="*30, ticket)
 
-    # 2. Запрашиваем детали рейса во Flight Service по номеру рейса из билета
+    if t_resp.status_code == 404:
+        raise HTTPException(
+            status_code=404, detail="Билет не найден или не принадлежит пользователю"
+        )
+
+    ticket = t_resp.json()
+
     f_resp = await flight_client.get_flight(ticket["flightNumber"])
-    
+
     if f_resp.status_code != 200:
-        # Если рейс не найден, возвращаем базовую информацию из билета
         return {
             **ticket,
             "fromAirport": "Unknown",
             "toAirport": "Unknown",
-            "date": "Unknown"
+            "date": "Unknown",
         }
 
     flight_data = f_resp.json()
 
-    # 3. Формируем финальный ответ согласно спецификации TicketResponse
     return {
         "ticketUid": ticket["ticketUid"],
         "flightNumber": ticket["flightNumber"],
@@ -144,16 +153,19 @@ async def get_ticket_info(ticketUid: str, x_user_name: str = Header(...)):
         "toAirport": flight_data["toAirport"],
         "date": flight_data["date"],
         "status": ticket["status"],
-        "price": ticket["price"]
+        "price": ticket["price"],
     }
+
 
 @app.get("/api/v1/privilege")
 async def get_privilege_with_history(x_user_name: str = Header(...)):
     resp = await bonus_client.get_privilege(x_user_name)
-    
+
     if resp.status_code != 200:
         if resp.status_code == 404:
-             raise HTTPException(status_code=404, detail="Бонусный профиль не найден")
-        raise HTTPException(status_code=resp.status_code, detail="Bonus Service unavailable")
+            raise HTTPException(status_code=404, detail="Бонусный профиль не найден")
+        raise HTTPException(
+            status_code=resp.status_code, detail="Bonus Service unavailable"
+        )
 
     return resp.json()

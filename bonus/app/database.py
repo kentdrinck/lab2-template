@@ -19,7 +19,6 @@ def get_privilege_with_history(username: str):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    # Получаем саму привилегию
     cur.execute("SELECT id, balance, status FROM privilege WHERE username = %s", (username,))
     privilege = cur.fetchone()
     
@@ -28,7 +27,6 @@ def get_privilege_with_history(username: str):
         conn.close()
         return {"balance": 0, "status": "BRONZE", "history": []}
 
-    # Получаем историю
     cur.execute("""
         SELECT datetime as "date", ticket_uid as "ticketUid", 
                balance_diff as "balanceDiff", operation_type as "operationType"
@@ -44,20 +42,15 @@ def process_bonus_operation(username: str, ticket_uid: str, price: int, paid_fro
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    # 1. Получаем текущий баланс
     cur.execute("SELECT id, balance, status FROM privilege WHERE username = %s", (username,))
     priv = cur.fetchone()
     
-    # ЗАЩИТА: Если пользователя нет в таблице privilege
     if priv is None:
-        # Вариант А: Автоматическое создание записи (рекомендуется для тестов)
         cur.execute(
             "INSERT INTO privilege (username, status, balance) VALUES (%s, 'BRONZE', 0) RETURNING id, balance, status",
             (username,)
         )
         priv = cur.fetchone()
-        # Вариант Б: Если создание не предусмотрено, можно бросить исключение:
-        # raise HTTPException(status_code=404, detail="User privilege profile not found")
 
     paid_by_bonuses = 0
     balance_diff = 0
@@ -74,14 +67,12 @@ def process_bonus_operation(username: str, ticket_uid: str, price: int, paid_fro
         paid_by_bonuses = 0
         op_type = 'FILL_IN_BALANCE'
 
-    # 2. Обновляем баланс
     cur.execute(
         "UPDATE privilege SET balance = balance + %s WHERE id = %s RETURNING balance, status",
         (balance_diff, priv['id'])
     )
     updated_priv = cur.fetchone()
 
-    # 3. Записываем историю
     cur.execute("""
         INSERT INTO privilege_history (privilege_id, ticket_uid, datetime, balance_diff, operation_type)
         VALUES (%s, %s, %s, %s, %s)
@@ -99,3 +90,7 @@ def process_bonus_operation(username: str, ticket_uid: str, price: int, paid_fro
             "status": updated_priv['status']
         }
     }
+
+# def process_rollback_operation():
+
+

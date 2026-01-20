@@ -18,8 +18,18 @@ class BonusOperationRequest(BaseModel):
     ticketUid: UUID
     price: int
     paidFromBalance: bool
+    username: str
 
 class BonusOperationResponse(BaseModel):
     paidByBonuses: int
     balanceDiff: int
     privilege: dict
+
+
+class RollbackRequest(BaseModel):
+    ticketUid: UUID
+    price: int
+
+class RollbackResponse(BaseModel):
+    ticketUid: UUID
+    price: int

@@ -8,7 +8,7 @@ app = FastAPI(title="Flight Service")
 async def manage_health():
     return {}
 
-@app.get("/api/v1/flights", response_model=PaginationResponse)
+@app.get("/flights", response_model=PaginationResponse)
 async def get_flights(page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=100)):
     items, total = fetch_flights(page, size)
     # Приведение даты к формату из примера
@@ -22,7 +22,7 @@ async def get_flights(page: int = Query(1, ge=1), size: int = Query(10, ge=1, le
         "items": items
     }
 
-@app.get("/api/v1/flights/{flight_number}", response_model=FlightResponse)
+@app.get("/flights/{flight_number}", response_model=FlightResponse)
 async def get_flight(flight_number: str):
     flight = fetch_flight_by_number(flight_number)
     if not flight:
