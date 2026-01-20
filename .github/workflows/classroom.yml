@@ -23,7 +23,7 @@ jobs:
 
       - name: Run unit tests
         timeout-minutes: 1
-        run: docker compose run test_ticket_service test_flight_service test_bonus_service
+        run: docker compose -f docker-compose-test.yml run test_ticket_service test_flight_service test_bonus_service
 
       - name: Run containters
         timeout-minutes: 3
