@@ -24,14 +24,16 @@ services:
       TICKET_SERVICE_HOST: http://ticket_service:8070
 
   ticket_db:
-    image: postgres:13
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:13
+        COPY ./flight/scripts/init_db.sql /docker-entrypoint-initdb.d/1-init.sql
     restart: always
     environment:
       POSTGRES_DB: flights
       POSTGRES_USER: program
       POSTGRES_PASSWORD: test
-    volumes:
-      - ./ticket/scripts/init_db.sql:/docker-entrypoint-initdb.d/1-init.sql
 
   ticket_service:
     build: ./ticket
@@ -47,14 +49,16 @@ services:
 
 # FLIGHT
   flight_db:
-    image: postgres:13
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:13
+        COPY ./flight/scripts/init_db.sql /docker-entrypoint-initdb.d/1-init.sql
     restart: always
     environment:
       POSTGRES_DB: flights
       POSTGRES_USER: program
       POSTGRES_PASSWORD: test
-    volumes:
-      - ./flight/scripts/init_db.sql:/docker-entrypoint-initdb.d/1-init.sql
 
   flight_service:
     build: ./flight
@@ -71,14 +75,16 @@ services:
 
 # BONUS
   bonus_db:
-    image: postgres:13
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:13
+        COPY ./flight/scripts/init_db.sql /docker-entrypoint-initdb.d/1-init.sql
     restart: always
     environment:
       POSTGRES_DB: flights
       POSTGRES_USER: program
       POSTGRES_PASSWORD: test
-    volumes:
-      - ./bonus/scripts/init_db.sql:/docker-entrypoint-initdb.d/1-init.sql
 
   bonus_service:
     build: ./bonus
